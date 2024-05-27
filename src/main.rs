@@ -1,3 +1,10 @@
+use app::App;
+
+mod app;
+mod board;
+mod error;
+
 fn main() {
-    println!("Hello, world!");
+    let mut app = App::default();
+    _ = app.run();
 }
