@@ -3,8 +3,9 @@ use app::App;
 mod app;
 mod board;
 mod error;
+mod raw_span;
 
 fn main() {
-    let mut app = App::default();
+    let mut app = App::new(4, 4);
     _ = app.run();
 }
