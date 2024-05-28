@@ -54,8 +54,13 @@ impl App {
         }
     }
 
+    /// Renders the [`App`]
     fn render(&self) {
         let mut wrapper = Layout::vertical().center();
+        wrapper.add_child(
+            format!("Score: {}", self.board.score),
+            Constrain::Length(1),
+        );
         wrapper.add_child(
             self.board.get(),
             Constrain::Length(self.board.height()),
@@ -67,6 +72,7 @@ impl App {
         _ = self.term.render(main);
     }
 
+    /// Handles key listening of the [`App`]
     fn key_listener(&mut self) -> Result<(), Error> {
         let Event::Key(KeyEvent { code, .. }) = read()? else {
             return Ok(());

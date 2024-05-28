@@ -10,6 +10,7 @@ use crate::{raw_span::RawSpan, tile::Tile};
 /// Struct representing 2048 board
 pub struct Board {
     tiles: Vec<Tile>,
+    pub score: usize,
     width: usize,
     height: usize,
 }
@@ -19,6 +20,7 @@ impl Board {
     pub fn new(width: usize, height: usize) -> Self {
         let mut board = Self {
             tiles: vec![Tile::new(0); width * height],
+            score: 0,
             width,
             height,
         };
@@ -159,6 +161,7 @@ impl Board {
         }
         if cur_val == self.tiles[next] {
             self.move_tile(cur, next);
+            self.score += self.tiles[cur].value() as usize;
             change = true;
         }
         return self.move_up(cur + self.width) || change;
@@ -179,6 +182,7 @@ impl Board {
         }
         if cur_val == self.tiles[next] {
             self.move_tile(cur, next);
+            self.score += self.tiles[cur].value() as usize;
             change = true;
         }
 
@@ -203,6 +207,7 @@ impl Board {
         }
         if cur_val == self.tiles[next] {
             self.move_tile(cur, next);
+            self.score += self.tiles[cur].value() as usize;
             change = true;
         }
 
@@ -227,6 +232,7 @@ impl Board {
         }
         if cur_val == self.tiles[next] {
             self.move_tile(cur, next);
+            self.score += self.tiles[cur].value() as usize;
             change = true;
         }
 
@@ -321,6 +327,7 @@ impl Default for Board {
                 0.into(),
                 0.into(),
             ],
+            score: 0,
             width: 4,
             height: 4,
         }
