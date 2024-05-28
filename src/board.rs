@@ -28,6 +28,13 @@ impl Board {
         board
     }
 
+    /// Resets the [`Board`]
+    pub fn reset(&mut self) {
+        self.tiles = vec![Tile::new(0); self.width * self.height];
+        self.score = 0;
+        self.generate();
+    }
+
     /// Gets [`Board`] as termint widget
     pub fn get(&self) -> Layout {
         let mut layout = Layout::vertical();

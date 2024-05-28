@@ -83,6 +83,10 @@ impl App {
             KeyCode::Down => self.board.down(),
             KeyCode::Left => self.board.left(),
             KeyCode::Right => self.board.right(),
+            KeyCode::Char('r') => {
+                self.board.reset();
+                print!("\x1b[H\x1b[J");
+            }
             KeyCode::Char('q') | KeyCode::Esc => return Err(Error::Exit),
             _ => return Ok(()),
         }
