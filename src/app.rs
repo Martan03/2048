@@ -7,7 +7,9 @@ use crossterm::{
     event::{poll, read, Event, KeyCode, KeyEvent},
     terminal::{disable_raw_mode, enable_raw_mode},
 };
-use termint::term::Term;
+use termint::{
+    geometry::constrain::Constrain, term::Term, widgets::layout::Layout,
+};
 
 use crate::{board::Board, error::Error};
 
@@ -53,7 +55,16 @@ impl App {
     }
 
     fn render(&self) {
-        _ = self.term.render(self.board.get());
+        let mut wrapper = Layout::vertical().center();
+        wrapper.add_child(
+            self.board.get(),
+            Constrain::Length(self.board.height()),
+        );
+
+        let mut main = Layout::horizontal().center();
+        main.add_child(wrapper, Constrain::Length(self.board.width()));
+
+        _ = self.term.render(main);
     }
 
     fn key_listener(&mut self) -> Result<(), Error> {
