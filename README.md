@@ -2,18 +2,20 @@
 
 2048 game implemented in terminal in Rust 🦀
 
+![image](https://github.com/Martan03/tui2048/assets/46300167/94f0b49e-2dc6-4bcf-a054-ce9690dd60dc)
+
 ## Contents
-- [Installation:](#installation)
-- [Usage:](#usage)
+- [Installation](#installation)
+- [Usage](#usage)
 - [Detailed description](#detailed-description)
     - [Game goal](#game-goal)
     - [Joining tiles](#joining-tiles)
     - [Game end](#game-end)
     - [Controls](#controls)
-- [Technologies:](#technologies)
+- [Technologies](#technologies)
 - [Links](#links)
 
-## Installation:
+## Installation
 You have to compile it yourself, but that shouldn't be a problem. Only thing
 you need is `cargo`:
 ```
@@ -21,7 +23,7 @@ cargo build -r
 ```
 After its done compiling, you can start it in `./target/release/tui2048`
 
-## Usage:
+## Usage
 Start 2048 game:
 ```
 ./tui2048
@@ -50,11 +52,11 @@ but what can also happen is that you fill the whole board and you can't join
 any tiles. This is game over. You can then restart the game with `r` key.
 
 ### Controls
-`Arrow keys`: moving tiles
-`Esc` / `q`: exits the game
-`r`: restarts the game
+- `Arrow keys`: moving tiles
+- `Esc` / `q`: exits the game
+- `r`: restarts the game
 
-## Technologies:
+## Technologies
 I used these libraries:
 - [crossterm](https://crates.io/crates/crossterm)
   - Creating key listeners
