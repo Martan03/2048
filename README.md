@@ -1,4 +1,4 @@
-# tui2048
+# 2048
 
 2048 game implemented in terminal in Rust 🦀
 
