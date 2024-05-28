@@ -2,7 +2,7 @@
 
 2048 game implemented in terminal in Rust 🦀
 
-![image](https://github.com/Martan03/tui2048/assets/46300167/94f0b49e-2dc6-4bcf-a054-ce9690dd60dc)
+![image](https://github.com/Martan03/2048/assets/46300167/ebdd7bd9-be3a-492b-bb9b-c48364fa9272)
 
 ## Contents
 - [Installation](#installation)
