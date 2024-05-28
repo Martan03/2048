@@ -5,7 +5,7 @@ use termint::{
     widgets::layout::Layout,
 };
 
-use crate::{raw_span::RawSpan, tile::Tile};
+use crate::{game_status::GameStatus, raw_span::RawSpan, tile::Tile};
 
 /// Struct representing 2048 board
 pub struct Board {
@@ -72,7 +72,7 @@ impl Board {
     }
 
     /// Moves [`Board`] tiles up
-    pub fn up(&mut self) {
+    pub fn up(&mut self) -> GameStatus {
         let mut change = false;
         for i in 0..self.width {
             if self.move_up(i) {
@@ -82,10 +82,11 @@ impl Board {
         if change {
             self.generate();
         }
+        self.status()
     }
 
     /// Moves [`Board`] tiles down
-    pub fn down(&mut self) {
+    pub fn down(&mut self) -> GameStatus {
         let mut change = false;
         for i in (self.width * (self.height - 1))..self.tiles.len() {
             if self.move_down(i) {
@@ -95,10 +96,11 @@ impl Board {
         if change {
             self.generate();
         }
+        self.status()
     }
 
     /// Moves [`Board`] tiles right
-    pub fn right(&mut self) {
+    pub fn right(&mut self) -> GameStatus {
         let mut change = false;
         let mut cur = self.width - 1;
         let offset = cur;
@@ -111,10 +113,11 @@ impl Board {
         if change {
             self.generate();
         }
+        self.status()
     }
 
     /// Moves [`Board`] tiles left
-    pub fn left(&mut self) {
+    pub fn left(&mut self) -> GameStatus {
         let mut change = false;
         let mut cur = 0;
         let offset = self.width - 1;
@@ -127,6 +130,7 @@ impl Board {
         if change {
             self.generate();
         }
+        self.status()
     }
 
     /// Generates new tile in empty space of [`Board`]
@@ -144,6 +148,51 @@ impl Board {
         } else {
             self.tiles[pos] = 2.into();
         }
+    }
+
+    /// Gets status of the game
+    fn status(&self) -> GameStatus {
+        if self.check_victory() {
+            GameStatus::Victory
+        } else if self.check_full() {
+            GameStatus::GameOver
+        } else {
+            GameStatus::Playing
+        }
+    }
+
+    /// Checks for the victory
+    fn check_victory(&self) -> bool {
+        for tile in self.tiles.iter() {
+            if tile.value() == 2048 {
+                return true;
+            }
+        }
+        false
+    }
+
+    /// Checks whether [`Board`] is full and no tiles can be joined
+    fn check_full(&self) -> bool {
+        for y in 0..self.height {
+            let offset = y * self.width;
+            for x in 0..self.width {
+                if self.tiles[offset + x].value() == 0 {
+                    return false;
+                }
+
+                if let Some(tile) = self.tiles.get(offset + x + 1) {
+                    if x != self.width - 1 && *tile == self.tiles[offset + x] {
+                        return false;
+                    }
+                }
+                if let Some(tile) = self.tiles.get(offset + x + self.width) {
+                    if *tile == self.tiles[offset + x] {
+                        return false;
+                    }
+                }
+            }
+        }
+        true
     }
 
     /// Moves tile from given position to given position
@@ -316,24 +365,7 @@ impl Board {
 impl Default for Board {
     fn default() -> Self {
         Self {
-            tiles: vec![
-                0.into(),
-                2.into(),
-                4.into(),
-                8.into(),
-                16.into(),
-                32.into(),
-                64.into(),
-                128.into(),
-                256.into(),
-                512.into(),
-                1024.into(),
-                2048.into(),
-                0.into(),
-                0.into(),
-                0.into(),
-                0.into(),
-            ],
+            tiles: vec![Tile::new(0); 16],
             score: 0,
             width: 4,
             height: 4,

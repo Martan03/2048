@@ -8,13 +8,16 @@ use crossterm::{
     terminal::{disable_raw_mode, enable_raw_mode},
 };
 use termint::{
-    geometry::constrain::Constrain, term::Term, widgets::layout::Layout,
+    geometry::constrain::Constrain,
+    term::Term,
+    widgets::{layout::Layout, spacer::Spacer},
 };
 
-use crate::{board::Board, error::Error};
+use crate::{board::Board, error::Error, game_status::GameStatus};
 
 pub struct App {
     board: Board,
+    status: GameStatus,
     term: Term,
 }
 
@@ -23,6 +26,7 @@ impl App {
     pub fn new(width: usize, height: usize) -> Self {
         Self {
             board: Board::new(width, height),
+            status: GameStatus::Playing,
             term: Term::new(),
         }
     }
@@ -57,10 +61,7 @@ impl App {
     /// Renders the [`App`]
     fn render(&self) {
         let mut wrapper = Layout::vertical().center();
-        wrapper.add_child(
-            format!("Score: {}", self.board.score),
-            Constrain::Length(1),
-        );
+        wrapper.add_child(self.render_status(), Constrain::Length(1));
         wrapper.add_child(
             self.board.get(),
             Constrain::Length(self.board.height()),
@@ -79,12 +80,13 @@ impl App {
         };
 
         match code {
-            KeyCode::Up => self.board.up(),
-            KeyCode::Down => self.board.down(),
-            KeyCode::Left => self.board.left(),
-            KeyCode::Right => self.board.right(),
+            KeyCode::Up => self.status = self.board.up(),
+            KeyCode::Down => self.status = self.board.down(),
+            KeyCode::Left => self.status = self.board.left(),
+            KeyCode::Right => self.status = self.board.right(),
             KeyCode::Char('r') => {
                 self.board.reset();
+                self.status = GameStatus::Playing;
                 print!("\x1b[H\x1b[J");
             }
             KeyCode::Char('q') | KeyCode::Esc => return Err(Error::Exit),
@@ -94,12 +96,24 @@ impl App {
         self.render();
         Ok(())
     }
+
+    fn render_status(&self) -> Layout {
+        let mut status = Layout::horizontal();
+        status.add_child(
+            format!("Score: {}", self.board.score),
+            Constrain::Min(0),
+        );
+        status.add_child(Spacer::new(), Constrain::Fill);
+        status.add_child(self.status.to_string(), Constrain::Min(0));
+        status
+    }
 }
 
 impl Default for App {
     fn default() -> Self {
         Self {
             board: Default::default(),
+            status: GameStatus::Playing,
             term: Term::new(),
         }
     }
