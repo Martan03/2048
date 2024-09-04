@@ -2,7 +2,7 @@
 
 2048 game implemented in terminal in Rust 🦀
 
-![image](https://github.com/Martan03/2048/assets/46300167/ebdd7bd9-be3a-492b-bb9b-c48364fa9272)
+![image](https://github.com/user-attachments/assets/4b02c9d2-7585-44e2-92fa-5244c9cb9225)
 
 ## Contents
 - [Installation](#installation)
@@ -51,10 +51,22 @@ I already mentioned the goal of the game - getting tile with value of 2048 -
 but what can also happen is that you fill the whole board and you can't join
 any tiles. This is game over. You can then restart the game with `r` key.
 
+### Custom game
+
+You can also start the game with any size of the board that fits yours screen 
+and its size is at least 2 in each dimension. The goal number (win number) can
+be set too (note that the number has to be power of 2 and at least 2). 
+This is example of setting both of the mentioned options:
+```
+./tui2048 -s 10 10 -w 4098
+```
+
+![image](https://github.com/user-attachments/assets/50cc688b-d100-4f72-bd6a-e9dad700fa69)
+
 ### Controls
-- `Arrow keys`: moving tiles
-- `Esc` / `q`: exits the game
+- `Arrow keys`/`hjkl`: moving tiles
 - `r`: restarts the game
+- `Esc` / `q`: exits the game
 
 ## Technologies
 I used these libraries:
