@@ -8,37 +8,28 @@ use crossterm::{
     terminal::{disable_raw_mode, enable_raw_mode},
 };
 use termint::{
-    enums::fg::Fg,
-    geometry::constrain::Constrain,
+    enums::{Color, Modifier},
+    geometry::{Constraint, Coords, TextAlign},
+    paragraph,
     term::Term,
-    widgets::{layout::Layout, spacer::Spacer, span::StrSpanExtension},
+    widgets::{Layout, Paragraph, Spacer, StrSpanExtension},
 };
 
-use crate::{
-    board::Board, error::Error, game_status::GameStatus, raw_span::RawSpan,
-};
-
-/// Represents which screen is currently shown
-pub enum Screen {
-    Game,
-    Help,
-}
+use crate::{board::Board, error::Error, game_status::GameStatus};
 
 pub struct App {
     board: Board,
     status: GameStatus,
-    screen: Screen,
     term: Term,
 }
 
 impl App {
     /// Creates new [`App`]
-    pub fn new(width: usize, height: usize) -> Self {
+    pub fn new(size: Coords, win: u16) -> Self {
         Self {
-            board: Board::new(width, height),
+            board: Board::new(size, win),
             status: GameStatus::Playing,
-            screen: Screen::Game,
-            term: Term::new(),
+            term: Term::new().small_screen(Self::small_screen()),
         }
     }
 
@@ -56,142 +47,106 @@ impl App {
         print!("\x1b[?1049l\x1b[?25h");
         _ = stdout().flush();
 
-        res
+        match res {
+            Err(Error::Exit) => Ok(()),
+            _ => res,
+        }
     }
 
     /// Main loop of the [`App`]
     fn main_loop(&mut self) -> Result<(), Error> {
-        self.render();
+        self.render()?;
         loop {
             if poll(Duration::from_millis(100))? {
-                self.key_listener()?;
+                self.event()?;
             }
         }
     }
 
     /// Renders the [`App`]
-    fn render(&self) {
-        match self.screen {
-            Screen::Game => self.render_game(),
-            Screen::Help => self.render_help(),
-        }
+    fn render(&mut self) -> Result<(), Error> {
+        let mut game = Layout::vertical().center();
+        game.add_child(self.render_status(), Constraint::Length(1));
+        game.add_child(self.board.clone(), Constraint::Min(0));
+
+        let mut wrapper = Layout::horizontal().center();
+        wrapper.add_child(game, Constraint::Min(0));
+
+        let mut main = Layout::vertical();
+        main.add_child(wrapper, Constraint::Fill);
+        main.add_child(self.render_help(), Constraint::Min(0));
+
+        self.term.render(main)?;
+        Ok(())
     }
 
     /// Handles key listening of the [`App`]
-    fn key_listener(&mut self) -> Result<(), Error> {
-        let Event::Key(KeyEvent { code, .. }) = read()? else {
-            return Ok(());
-        };
-
-        match self.screen {
-            Screen::Game => self.game_listener(code),
-            Screen::Help => self.help_listener(code),
+    fn event(&mut self) -> Result<(), Error> {
+        match read()? {
+            Event::Key(e) => self.key_handler(e),
+            Event::Resize(_, _) => self.render(),
+            _ => Ok(()),
         }
     }
 
-    /// Renders the game screen
-    fn render_game(&self) {
-        let mut wrapper = Layout::vertical().center();
-        wrapper.add_child(self.render_status(), Constrain::Length(1));
-        wrapper.add_child(
-            self.board.get(),
-            Constrain::Length(self.board.height()),
-        );
-        wrapper.add_child(
-            "🛈 Press i for help".fg(Fg::Hex(0x303030)),
-            Constrain::Length(1),
-        );
-
-        let mut main = Layout::horizontal().center();
-        main.add_child(wrapper, Constrain::Length(self.board.width()));
-
-        _ = self.term.render(main);
-    }
-
     /// Renders the help screen
-    fn render_help(&self) {
-        let mut wrapper = Layout::vertical().center();
-        wrapper.add_child(
-            self.render_control("←↑↓→", "tiles movement"),
-            Constrain::Length(1),
-        );
-        wrapper.add_child(
-            self.render_control("r", "restart game"),
-            Constrain::Length(1),
-        );
-        wrapper.add_child(
-            self.render_control("i", "toggle help"),
-            Constrain::Length(1),
-        );
-        wrapper.add_child(
-            self.render_control("Esc/q", "quit game"),
-            Constrain::Length(1),
-        );
-
-        let mut main = Layout::horizontal().center();
-        main.add_child(wrapper, Constrain::Length(22));
-
-        _ = self.term.render(main);
+    fn render_help(&self) -> Paragraph {
+        paragraph!(
+            "[Arrows]Movement".fg(Color::Gray),
+            "[r]Restart".fg(Color::Gray),
+            "[Esc|q]Quit".fg(Color::Gray),
+        )
+        .separator(" ")
     }
 
-    /// Handles key listening of the game screen
-    fn game_listener(&mut self, code: KeyCode) -> Result<(), Error> {
-        match code {
-            KeyCode::Up => self.status = self.board.up(),
-            KeyCode::Down => self.status = self.board.down(),
-            KeyCode::Left => self.status = self.board.left(),
-            KeyCode::Right => self.status = self.board.right(),
+    /// Handles key events
+    fn key_handler(&mut self, event: KeyEvent) -> Result<(), Error> {
+        match event.code {
+            KeyCode::Up | KeyCode::Char('k') => self.status = self.board.up(),
+            KeyCode::Down | KeyCode::Char('j') => {
+                self.status = self.board.down()
+            }
+            KeyCode::Left | KeyCode::Char('h') => {
+                self.status = self.board.left()
+            }
+            KeyCode::Right | KeyCode::Char('l') => {
+                self.status = self.board.right()
+            }
             KeyCode::Char('r') => {
                 self.board.reset();
                 self.status = GameStatus::Playing;
-                print!("\x1b[H\x1b[J");
-            }
-            KeyCode::Char('i') => {
-                self.screen = Screen::Help;
-                print!("\x1b[H\x1b[J");
             }
             KeyCode::Char('q') | KeyCode::Esc => return Err(Error::Exit),
             _ => return Ok(()),
         }
-
-        self.render();
-        Ok(())
-    }
-
-    /// Handles key listening of the help screen
-    fn help_listener(&mut self, code: KeyCode) -> Result<(), Error> {
-        match code {
-            KeyCode::Esc | KeyCode::Char('q') => return Err(Error::Exit),
-            KeyCode::Char('i') => {
-                print!("\x1b[H\x1b[J");
-                self.screen = Screen::Game
-            }
-            _ => return Ok(()),
-        }
-
-        self.render();
-        Ok(())
+        self.render()
     }
 
     fn render_status(&self) -> Layout {
         let mut status = Layout::horizontal();
         status.add_child(
             format!("Score: {}", self.board.score),
-            Constrain::Min(0),
+            Constraint::Min(0),
         );
-        status.add_child(Spacer::new(), Constrain::Fill);
-        status.add_child(self.status.to_string(), Constrain::Min(0));
+        status.add_child(Spacer::new(), Constraint::Fill);
+        status.add_child(self.status.to_string(), Constraint::Min(0));
         status
     }
 
-    fn render_control(&self, key: &str, action: &str) -> Layout {
-        let mut control = Layout::horizontal();
-        control.add_child(
-            RawSpan::new(format!("{key}:")).fg(Fg::Cyan),
-            Constrain::Length(8),
+    /// Small screen to be displayed, when game can't fit
+    fn small_screen() -> Layout {
+        let mut layout = Layout::vertical().center();
+        layout.add_child(
+            "Terminal too small!"
+                .modifier(Modifier::BOLD)
+                .align(TextAlign::Center),
+            Constraint::Min(0),
         );
-        control.add_child(action, Constrain::Fill);
-        control
+        layout.add_child(
+            "You have to increase terminal size".align(TextAlign::Center),
+            Constraint::Min(0),
+        );
+        layout
     }
 }
 
@@ -200,7 +155,6 @@ impl Default for App {
         Self {
             board: Default::default(),
             status: GameStatus::Playing,
-            screen: Screen::Game,
             term: Term::new(),
         }
     }
